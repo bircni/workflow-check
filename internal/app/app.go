@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+
+	"github.com/bircni/workflow-check/internal/appmeta"
 )
 
 // Config holds CLI options shared by commands.
@@ -52,6 +54,9 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	case "help", "-h", "--help":
 		printUsage(stdout)
 		return nil
+	case "version", "--version":
+		_, err := fmt.Fprintln(stdout, appmeta.Version)
+		return err
 	default:
 		printUsage(stderr)
 		return fmt.Errorf("unknown command %q", args[0])
@@ -107,7 +112,8 @@ func parseConfig(args []string) (Config, error) {
 }
 
 func printUsage(w io.Writer) {
-	_, _ = fmt.Fprintln(w, "usage: workflow-lock <lock|verify|list|diff> [flags]")
+	_, _ = fmt.Fprintln(w, "usage: workflow-lock <lock|verify|list|diff|version> [flags]")
+	_, _ = fmt.Fprintf(w, "version: %s\n", appmeta.Version)
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "flags:")
 	_, _ = fmt.Fprintln(w, "  -workflows string")

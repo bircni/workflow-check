@@ -25,13 +25,15 @@ make ci
 
 next_tag="$(git-cliff --config .git-cliff.toml --bumped-version | tail -n1)"
 
+printf '%s\n' "${next_tag}" > VERSION
+
 if [[ -f CHANGELOG.md ]]; then
   git-cliff --config .git-cliff.toml --unreleased --tag "${next_tag}" --prepend CHANGELOG.md
 else
   git-cliff --config .git-cliff.toml --output CHANGELOG.md
 fi
 
-git add CHANGELOG.md
+git add CHANGELOG.md VERSION
 git commit -m "chore(release): ${next_tag}"
 git tag -a "${next_tag}" -m "${next_tag}"
 printf 'created release commit and tag %s\n' "${next_tag}"

@@ -2,6 +2,8 @@
 
 `workflow-lock` keeps workflow files readable while locking remote action refs to immutable commit SHAs in `workflow-lock.yaml`.
 
+The current tool version is tracked in [VERSION](/Users/nicolas/Github/bircni/workflow-check/VERSION) and exposed by `workflow-lock version`.
+
 It supports GitHub-style and Gitea-style refs, including:
 
 - `owner/repo@ref`
@@ -21,6 +23,7 @@ go run ./cmd/workflow-lock lock
 go run ./cmd/workflow-lock verify
 go run ./cmd/workflow-lock list
 go run ./cmd/workflow-lock diff
+go run ./cmd/workflow-lock version
 ```
 
 Defaults:
@@ -75,6 +78,6 @@ make clean
 
 - `make dist` builds local cross-platform binaries and writes `dist/SHA256SUMS`.
 - `make changelog` writes `CHANGELOG.md` in the repo using `git-cliff`.
-- `make release` runs CI checks, calculates the next version with `git-cliff`, updates `CHANGELOG.md`, creates a dedicated `chore(release): vX.Y.Z` commit, and tags that commit locally.
+- `make release` runs CI checks, calculates the next version with `git-cliff`, updates `VERSION` and `CHANGELOG.md`, creates a dedicated `chore(release): vX.Y.Z` commit, and tags that commit locally.
 - `make release` does not push or publish anything.
 - `make release` requires `git-cliff` to be installed locally.

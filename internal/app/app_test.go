@@ -31,8 +31,22 @@ func TestRunHelpIncludesNewCommands(t *testing.T) {
 	if err := Run(context.Background(), []string{"help"}, &stdout, &stderr); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(stdout.String(), "<lock|verify|list|diff>") {
+	if !strings.Contains(stdout.String(), "<lock|verify|list|diff|version>") {
 		t.Fatalf("unexpected help output: %q", stdout.String())
+	}
+}
+
+func TestRunVersion(t *testing.T) {
+	t.Parallel()
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := Run(context.Background(), []string{"version"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.TrimSpace(stdout.String()) == "" {
+		t.Fatalf("expected version output, got %q", stdout.String())
 	}
 }
 
