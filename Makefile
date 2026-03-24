@@ -25,7 +25,6 @@ clean:
 
 test:
 	$(GO) test ./...
-	./scripts/next_version_test.sh
 
 fmt:
 	$(GO) run $(GOFUMPT_PACKAGE) -extra -w ./cmd ./internal
@@ -41,7 +40,7 @@ lock:
 	$(GO) run ./cmd/workflow-lock lock
 
 changelog:
-	$(GIT_CLIFF) --config .git-cliff.toml --unreleased --strip header
+	$(GIT_CLIFF) --config .git-cliff.toml --output CHANGELOG.md
 
 release:
 	./scripts/release.sh
@@ -49,5 +48,4 @@ release:
 ci:
 	$(MAKE) lint
 	$(GO) test ./...
-	./scripts/next_version_test.sh
 	$(GO) run ./cmd/workflow-lock verify

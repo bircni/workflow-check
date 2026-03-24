@@ -73,8 +73,8 @@ make clean
 
 ## Releases
 
-- Push a tag like `v0.1.0` to build release artifacts and attach them to a GitHub release.
 - `make dist` builds local cross-platform binaries and writes `dist/SHA256SUMS`.
-- `make changelog` renders unreleased notes with `git-cliff`.
-- `make release` runs CI checks, calculates the next version from conventional commits, generates release notes with `git-cliff`, creates the tag, pushes it, and publishes a GitHub release.
-- `make release` requires `git-cliff` and `gh` to be installed locally.
+- `make changelog` writes `CHANGELOG.md` in the repo using `git-cliff`.
+- `make release` runs CI checks, calculates the next version with `git-cliff`, updates `CHANGELOG.md`, creates a dedicated `chore(release): vX.Y.Z` commit, and tags that commit locally.
+- `make release` does not push or publish anything.
+- `make release` requires `git-cliff` to be installed locally.
