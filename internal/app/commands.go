@@ -10,8 +10,10 @@ import (
 	"github.com/bircni/workflow-check/internal/workflowlock"
 )
 
+var newEngine = workflowlock.NewEngineWithDefaultHost
+
 func runLock(ctx context.Context, cfg Config, stdout io.Writer) error {
-	engine := workflowlock.NewEngineWithDefaultHost(workflowlock.GitResolver{}, cfg.DefaultHost)
+	engine := newEngine(workflowlock.GitResolver{}, cfg.DefaultHost)
 	if err := engine.Lock(ctx, cfg.WorkflowDir, cfg.Lockfile); err != nil {
 		return err
 	}
@@ -20,7 +22,7 @@ func runLock(ctx context.Context, cfg Config, stdout io.Writer) error {
 }
 
 func runVerify(ctx context.Context, cfg Config, stdout io.Writer) error {
-	engine := workflowlock.NewEngineWithDefaultHost(workflowlock.GitResolver{}, cfg.DefaultHost)
+	engine := newEngine(workflowlock.GitResolver{}, cfg.DefaultHost)
 	if err := engine.Verify(ctx, cfg.WorkflowDir, cfg.Lockfile); err != nil {
 		return err
 	}
@@ -65,7 +67,7 @@ func runList(ctx context.Context, cfg Config, stdout io.Writer) error {
 }
 
 func runDiff(ctx context.Context, cfg Config, stdout io.Writer) error {
-	engine := workflowlock.NewEngineWithDefaultHost(workflowlock.GitResolver{}, cfg.DefaultHost)
+	engine := newEngine(workflowlock.GitResolver{}, cfg.DefaultHost)
 	report, err := engine.Report(ctx, cfg.WorkflowDir, cfg.Lockfile)
 	if err != nil {
 		return err
