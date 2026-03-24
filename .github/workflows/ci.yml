@@ -16,7 +16,11 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+      - name: Verify
+        run: make verify
       - name: Lint
         run: make lint
-      - name: Run CI checks
-        run: make test && make verify
+      - name: Test
+        run: make test
+      - name: Coverage
+        run: make coverage
