@@ -1,0 +1,41 @@
+version: 1
+entries:
+    - host: gitea.example.com
+      owner: acme
+      repo: build-action
+      ref: v1
+      resolved_sha: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+      source_kind: action
+    - host: gitea.example.com
+      owner: acme
+      repo: qa-action
+      path: path/to/action
+      ref: main
+      resolved_sha: ffffffffffffffffffffffffffffffffffffffff
+      source_kind: action
+    - host: github.com
+      owner: acme
+      repo: infra
+      path: .github/workflows/release.yml
+      ref: v2
+      resolved_sha: cccccccccccccccccccccccccccccccccccccccc
+      source_kind: reusable_workflow
+    - host: github.com
+      owner: actions
+      repo: cache
+      path: save
+      ref: v4
+      resolved_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      source_kind: action
+    - host: github.com
+      owner: actions
+      repo: checkout
+      ref: v4
+      resolved_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      source_kind: action
+    - host: github.com
+      owner: actions
+      repo: setup-go
+      ref: v5
+      resolved_sha: dddddddddddddddddddddddddddddddddddddddd
+      source_kind: action

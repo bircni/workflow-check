@@ -1,0 +1,17 @@
+name: build
+
+on:
+  push:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+      - uses: ./local/lint
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: gitea.example.com/acme/build-action@v1
+      - uses: acme/infra/.github/workflows/release.yml@v2

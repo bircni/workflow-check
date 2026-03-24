@@ -1,0 +1,12 @@
+name: release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: github.com/actions/cache/save@v4
+      - uses: actions/checkout@v4
+      - uses: gitea.example.com/acme/qa-action/path/to/action@main
