@@ -2,6 +2,7 @@ package workflowlock
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -367,6 +368,101 @@ func TestReportIncludesStaleEntries(t *testing.T) {
 	if len(report.Stale) != 1 || report.Stale[0].Repo != "setup-go" {
 		t.Fatalf("unexpected stale entries: %+v", report.Stale)
 	}
+}
+
+func TestLockWithEmptyWorkflowDirectoryWritesEmptyLockfile(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workflowDir := filepath.Join(root, ".github", "workflows")
+	if err := os.MkdirAll(workflowDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	lockfile := filepath.Join(root, "workflow-lock.yaml")
+	if err := NewEngine(fakeResolver{results: map[string]string{}}).Lock(context.Background(), workflowDir, lockfile); err != nil {
+		t.Fatalf("lock failed: %v", err)
+	}
+
+	data, err := os.ReadFile(lockfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "entries: []") {
+		t.Fatalf("expected empty entries, got %s", string(data))
+	}
+}
+
+func TestVerifyRejectsUnsupportedLockfileVersion(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workflowDir := filepath.Join(root, ".github", "workflows")
+	if err := os.MkdirAll(workflowDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "workflow-lock.yaml"), []byte("version: 99\nentries: []\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := NewEngine(fakeResolver{results: map[string]string{}}).Verify(context.Background(), workflowDir, filepath.Join(root, "workflow-lock.yaml"))
+	if err == nil || !strings.Contains(err.Error(), "unsupported lockfile version") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestReportRejectsMalformedLockfile(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workflowDir := filepath.Join(root, ".github", "workflows")
+	if err := os.MkdirAll(workflowDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "workflow-lock.yaml"), []byte("version: [oops"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := NewEngine(fakeResolver{results: map[string]string{}}).Report(context.Background(), workflowDir, filepath.Join(root, "workflow-lock.yaml"))
+	if err == nil || !strings.Contains(err.Error(), "parse lockfile") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestReportPropagatesResolverErrors(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workflowDir := filepath.Join(root, ".github", "workflows")
+	if err := os.MkdirAll(workflowDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workflowDir, "ci.yml"), []byte("jobs:\n  test:\n    steps:\n      - uses: actions/checkout@v4\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteLockfile(filepath.Join(root, "workflow-lock.yaml"), []LockEntry{{
+		Host:        "github.com",
+		Owner:       "actions",
+		Repo:        "checkout",
+		Ref:         "v4",
+		ResolvedSHA: strings.Repeat("a", 40),
+		SourceKind:  SourceKindAction,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := NewEngine(erroringResolver{err: errors.New("resolver failed")}).Report(context.Background(), workflowDir, filepath.Join(root, "workflow-lock.yaml"))
+	if err == nil || !strings.Contains(err.Error(), "resolver failed") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+type erroringResolver struct {
+	err error
+}
+
+func (e erroringResolver) Resolve(context.Context, NormalizedRef) (string, error) {
+	return "", e.err
 }
 
 func copyDir(src, dst string) error {

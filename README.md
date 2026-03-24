@@ -66,6 +66,7 @@ A ready-to-copy example lives at [.workflow-lock-config.example.yaml](/Users/nic
 make fmt
 make lint
 make test
+make coverage
 make verify
 make build
 make dist
@@ -77,6 +78,7 @@ make clean
 ## Releases
 
 - `make dist` builds local cross-platform binaries and writes `dist/SHA256SUMS`.
+- `make coverage` enforces a minimum total test coverage threshold.
 - `make changelog` writes `CHANGELOG.md` in the repo using `git-cliff`.
 - `make release` runs CI checks, calculates the next version with `git-cliff`, updates `VERSION` and `CHANGELOG.md`, creates a dedicated `chore(release): vX.Y.Z` commit, and tags that commit locally.
 - `make release` does not push or publish anything.

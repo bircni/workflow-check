@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+var execCommandContext = exec.CommandContext
+
 // Resolver resolves a normalized workflow ref to an immutable commit SHA.
 type Resolver interface {
 	Resolve(context.Context, NormalizedRef) (string, error)
@@ -27,7 +29,7 @@ func (GitResolver) Resolve(ctx context.Context, ref NormalizedRef) (string, erro
 	}
 
 	args := append([]string{"ls-remote", remote}, patterns...)
-	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd := execCommandContext(ctx, "git", args...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout

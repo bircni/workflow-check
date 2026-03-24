@@ -5,8 +5,9 @@ GOLANGCI_LINT_PACKAGE ?= github.com/golangci/golangci-lint/v2/cmd/golangci-lint@
 GIT_CLIFF ?= git-cliff
 VERSION ?= $(shell cat VERSION 2>/dev/null || git describe --tags --always --dirty)
 LDFLAGS := -X github.com/bircni/workflow-check/internal/appmeta.Version=$(VERSION)
+COVERAGE_THRESHOLD ?= 75
 
-.PHONY: build dist clean test fmt lint verify lock changelog release ci
+.PHONY: build dist clean test coverage fmt lint verify lock changelog release ci
 
 build:
 	mkdir -p bin
@@ -27,6 +28,9 @@ clean:
 
 test:
 	$(GO) test ./...
+
+coverage:
+	./scripts/check_coverage.sh $(COVERAGE_THRESHOLD)
 
 fmt:
 	$(GO) run $(GOFUMPT_PACKAGE) -extra -w ./cmd ./internal
@@ -50,4 +54,5 @@ release:
 ci:
 	$(MAKE) lint
 	$(GO) test ./...
+	$(MAKE) coverage
 	$(GO) run ./cmd/workflow-lock verify
