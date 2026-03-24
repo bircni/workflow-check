@@ -1,6 +1,14 @@
 # Changelog
 
 All notable changes to this project are documented in this file.
+## [0.3.0] - 2026-03-24
+
+### Features
+
+- Make release create local release commits (9d22bee)
+
+- Embed explicit tool version metadata (367ad5a)
+
 ## [0.2.0] - 2026-03-24
 
 ### Features
