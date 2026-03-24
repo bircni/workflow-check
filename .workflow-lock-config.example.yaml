@@ -1,0 +1,3 @@
+workflows: .github/workflows
+lockfile: workflow-lock.yaml
+default_host: github.com

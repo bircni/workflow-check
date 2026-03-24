@@ -1,0 +1,32 @@
+version: 1
+entries:
+    - host: github.com
+      owner: actions
+      repo: checkout
+      ref: v4
+      resolved_sha: 34e114876b0b11c390a56381ad16ebd13914f8d5
+      source_kind: action
+    - host: github.com
+      owner: actions
+      repo: download-artifact
+      ref: v4
+      resolved_sha: d3f86a106a0bac45b974a628896c90dbdf5c8093
+      source_kind: action
+    - host: github.com
+      owner: actions
+      repo: setup-go
+      ref: v5
+      resolved_sha: 40f1582b2485089dde7abd97c1529aa768e1baff
+      source_kind: action
+    - host: github.com
+      owner: actions
+      repo: upload-artifact
+      ref: v4
+      resolved_sha: ea165f8d65b6e75b540449e92b4886f43607fa02
+      source_kind: action
+    - host: github.com
+      owner: softprops
+      repo: action-gh-release
+      ref: v2
+      resolved_sha: 153bb8e04406b158c6c84fc1615b65b24149a1fe
+      source_kind: action
