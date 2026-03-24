@@ -2,8 +2,9 @@ GO ?= go
 BIN := workflow-lock
 GOFUMPT_PACKAGE ?= mvdan.cc/gofumpt@v0.9.2
 GOLANGCI_LINT_PACKAGE ?= github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.9.0
+GIT_CLIFF ?= git-cliff
 
-.PHONY: build dist clean test fmt lint verify lock ci
+.PHONY: build dist clean test fmt lint verify lock changelog release ci
 
 build:
 	mkdir -p bin
@@ -24,6 +25,7 @@ clean:
 
 test:
 	$(GO) test ./...
+	./scripts/next_version_test.sh
 
 fmt:
 	$(GO) run $(GOFUMPT_PACKAGE) -extra -w ./cmd ./internal
@@ -38,7 +40,14 @@ verify:
 lock:
 	$(GO) run ./cmd/workflow-lock lock
 
+changelog:
+	$(GIT_CLIFF) --config .git-cliff.toml --unreleased --strip header
+
+release:
+	./scripts/release.sh
+
 ci:
 	$(MAKE) lint
 	$(GO) test ./...
+	./scripts/next_version_test.sh
 	$(GO) run ./cmd/workflow-lock verify
