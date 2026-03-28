@@ -2,7 +2,7 @@
 
 `workflow-lock` keeps workflow files readable while locking remote action refs to immutable commit SHAs in `workflow-lock.yaml`.
 
-The current tool version is tracked in [VERSION](/Users/nicolas/Github/bircni/workflow-check/VERSION) and exposed by `workflow-lock version`.
+The current tool version is tracked in [VERSION](VERSION) and exposed by `workflow-lock version`.
 
 It supports GitHub-style and Gitea-style refs, including:
 
@@ -16,14 +16,26 @@ Ignored in v1:
 - local `./...` refs
 - generic URL forms such as `https://...`
 
-## Usage
+## Installation
+
+**Prebuilt binaries** for common platforms are attached to [GitHub Releases](https://github.com/bircni/workflow-check/releases). Verify with the published `SHA256SUMS` when you download.
+
+**Go toolchain** (installs `workflow-lock` into `GOBIN` or `GOPATH/bin`; ensure that directory is on your `PATH`):
 
 ```bash
-go run ./cmd/workflow-lock lock
-go run ./cmd/workflow-lock verify
-go run ./cmd/workflow-lock list
-go run ./cmd/workflow-lock diff
-go run ./cmd/workflow-lock version
+go install github.com/bircni/workflow-check/cmd/workflow-lock@latest
+```
+
+## Usage
+
+After installation, run the `workflow-lock` binary (or `./bin/workflow-lock` if you used `make build`):
+
+```bash
+workflow-lock lock
+workflow-lock verify
+workflow-lock list
+workflow-lock diff
+workflow-lock version
 ```
 
 Defaults:
@@ -41,10 +53,12 @@ Useful flags:
 Examples:
 
 ```bash
-go run ./cmd/workflow-lock lock -default-host code.gitea.example.com
-go run ./cmd/workflow-lock diff -format json
-go run ./cmd/workflow-lock verify -config .workflow-lock-config.yaml
+workflow-lock lock -default-host code.gitea.example.com
+workflow-lock diff -format json
+workflow-lock verify -config .workflow-lock-config.yaml
 ```
+
+When hacking on this repository without installing, you can use `go run ./cmd/workflow-lock <subcommand> ...` instead of `workflow-lock`.
 
 ## Config
 
@@ -58,9 +72,11 @@ lockfile: workflow-lock.yaml
 default_host: github.com
 ```
 
-A ready-to-copy example lives at [.workflow-lock-config.example.yaml](/Users/nicolas/Github/bircni/workflow-check/.workflow-lock-config.example.yaml).
+A ready-to-copy example lives at [.workflow-lock-config.example.yaml](.workflow-lock-config.example.yaml).
 
 ## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose changes.
 
 ```bash
 make fmt
@@ -74,12 +90,3 @@ make changelog
 make release
 make clean
 ```
-
-## Releases
-
-- `make dist` builds local cross-platform binaries and writes `dist/SHA256SUMS`.
-- `make coverage` enforces a minimum total test coverage threshold.
-- `make changelog` writes `CHANGELOG.md` in the repo using `git-cliff`.
-- `make release` runs CI checks, calculates the next version with `git-cliff`, updates `VERSION` and `CHANGELOG.md`, creates a dedicated `chore(release): vX.Y.Z` commit, and tags that commit locally.
-- `make release` does not push or publish anything.
-- `make release` requires `git-cliff` to be installed locally.

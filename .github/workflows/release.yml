@@ -40,7 +40,10 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: go build -o dist/${{ matrix.artifact }} ./cmd/workflow-lock
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          go build -ldflags "-X github.com/bircni/workflow-check/internal/appmeta.Version=${VERSION}" \
+            -o dist/${{ matrix.artifact }} ./cmd/workflow-lock
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
