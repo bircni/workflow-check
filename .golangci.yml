@@ -1,16 +1,126 @@
 version: "2"
 
+output:
+  sort-order:
+    - file
+
 linters:
   default: none
   enable:
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - depguard
+    - durationcheck
     - errcheck
+    - errorlint
+    - forbidigo
+    - gocheckcompilerdirectives
+    - gocritic
     - govet
     - ineffassign
+    - mirror
+    - misspell
+    - modernize
+    - nakedret
+    - nilerr
+    - nilnil
+    - nolintlint
+    - perfsprint
+    - prealloc
+    - reassign
     - revive
     - staticcheck
+    - thelper
     - unconvert
+    - unparam
     - unused
+    - usestdlibvars
+    - usetesting
     - wastedassign
+
+  settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: io/ioutil
+              desc: use io or os instead
+            - pkg: github.com/pkg/errors
+              desc: use the standard library errors package instead
+
+    nolintlint:
+      allow-unused: false
+      require-explanation: true
+      require-specific: true
+
+    gocritic:
+      enabled-checks:
+        - equalFold
+      disabled-checks:
+        - ifElseChain
+        - singleCaseSwitch
+
+    revive:
+      severity: error
+      rules:
+        - name: blank-imports
+        - name: constant-logical-expr
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: empty-lines
+        - name: error-return
+        - name: error-strings
+        - name: exported
+        - name: identical-branches
+        - name: if-return
+        - name: increment-decrement
+        - name: modifies-value-receiver
+        - name: package-comments
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: var-declaration
+        - name: var-naming
+          arguments:
+            - []
+            - []
+            - [{ skip-package-name-checks: true }]
+
+    staticcheck:
+      checks:
+        - all
+        - -ST1003
+        - -ST1005
+
+    perfsprint:
+      concat-loop: false
+
+    govet:
+      enable:
+        - nilness
+        - unusedwrite
+
+    usetesting:
+      os-temp-dir: true
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+          - unparam
+        path: _test\.go
+      - linters:
+          - forbidigo
+        path: (^|/)cmd/
 
 formatters:
   enable:
@@ -19,10 +129,12 @@ formatters:
   settings:
     gofumpt:
       extra-rules: true
+  exclusions:
+    generated: lax
 
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
 
 run:
-  timeout: 5m
+  timeout: 10m

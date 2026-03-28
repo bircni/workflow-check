@@ -1,7 +1,9 @@
 package workflowlock
 
 import (
+	"errors"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -15,7 +17,7 @@ func NormalizeRef(raw string) (NormalizedRef, bool, error) {
 func NormalizeRefForHost(raw, defaultHost string) (NormalizedRef, bool, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return NormalizedRef{}, false, fmt.Errorf("empty uses value")
+		return NormalizedRef{}, false, errors.New("empty uses value")
 	}
 	if strings.HasPrefix(raw, "./") || strings.HasPrefix(raw, "../") {
 		return NormalizedRef{}, true, nil
@@ -70,10 +72,8 @@ func looksLikeHost(part string) bool {
 }
 
 func validateNormalizedRef(ref NormalizedRef, raw string) error {
-	for _, part := range []string{ref.Host, ref.Owner, ref.Repo, ref.Ref} {
-		if part == "" {
-			return fmt.Errorf("unsupported uses reference %q", raw)
-		}
+	if slices.Contains([]string{ref.Host, ref.Owner, ref.Repo, ref.Ref}, "") {
+		return fmt.Errorf("unsupported uses reference %q", raw)
 	}
 	if strings.Contains(ref.Host, "://") {
 		return fmt.Errorf("unsupported uses reference %q", raw)
@@ -92,10 +92,7 @@ func validateNormalizedRef(ref NormalizedRef, raw string) error {
 			return err
 		}
 	}
-	if err := validateSlashDelimitedSegments(ref.Ref, raw, "ref"); err != nil {
-		return err
-	}
-	return nil
+	return validateSlashDelimitedSegments(ref.Ref, raw, "ref")
 }
 
 func validateHostSegment(host, raw string) error {
@@ -119,7 +116,7 @@ func validateIdentitySegment(part, raw, label string) error {
 }
 
 func validateSlashDelimitedSegments(value, raw, label string) error {
-	for _, seg := range strings.Split(value, "/") {
+	for seg := range strings.SplitSeq(value, "/") {
 		if seg == "" || seg == "." || seg == ".." {
 			return fmt.Errorf("unsupported uses reference %q: invalid %s", raw, label)
 		}

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,11 +19,11 @@ type fileConfig struct {
 }
 
 func resolveConfig(args []string) (string, error) {
-	for i := 0; i < len(args); i++ {
+	for i := range args {
 		arg := args[i]
 		if arg == "-config" {
 			if i+1 >= len(args) {
-				return "", fmt.Errorf("missing value for -config")
+				return "", errors.New("missing value for -config")
 			}
 			return args[i+1], nil
 		}
@@ -31,9 +32,11 @@ func resolveConfig(args []string) (string, error) {
 		}
 	}
 
-	if _, err := os.Stat(defaultConfigPath); err == nil {
+	_, err := os.Stat(defaultConfigPath)
+	if err == nil {
 		return defaultConfigPath, nil
-	} else if err != nil && !os.IsNotExist(err) {
+	}
+	if !os.IsNotExist(err) {
 		return "", fmt.Errorf("stat config %s: %w", defaultConfigPath, err)
 	}
 	return "", nil

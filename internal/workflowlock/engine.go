@@ -74,7 +74,7 @@ func (e Engine) Verify(ctx context.Context, workflowDir, lockfilePath string) er
 		issues = append(issues, fmt.Sprintf("%s:%d lock drift for %s: lockfile=%s resolved=%s", drift.Discovered.File, drift.Discovered.Line, drift.Discovered.Raw, drift.Entry.ResolvedSHA, drift.Resolved))
 	}
 	for _, stale := range report.Stale {
-		issues = append(issues, fmt.Sprintf("stale lock entry for %s", stale.Key()))
+		issues = append(issues, "stale lock entry for "+stale.Key())
 	}
 
 	return fmt.Errorf("verification failed:\n%s", strings.Join(issues, "\n"))
