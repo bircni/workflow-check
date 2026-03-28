@@ -13,7 +13,7 @@ It supports GitHub-style and Gitea-style refs, including:
 
 Ignored in v1:
 
-- local `./...` refs
+- local `./...` and `../...` refs
 - generic URL forms such as `https://...`
 
 ## Installation

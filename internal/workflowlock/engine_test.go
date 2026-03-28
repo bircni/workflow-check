@@ -82,6 +82,26 @@ func TestNormalizeRef(t *testing.T) {
 			wantIgnore: true,
 		},
 		{
+			name:       "parent-relative local ref ignored",
+			raw:        "../shared-actions/lint@v1",
+			wantIgnore: true,
+		},
+		{
+			name:    "owner traversal rejected",
+			raw:     "github.com/../evil/repo@v1",
+			wantErr: "invalid",
+		},
+		{
+			name:    "ref traversal segment rejected",
+			raw:     "actions/checkout@v4/../other",
+			wantErr: "invalid",
+		},
+		{
+			name:    "whitespace in owner rejected",
+			raw:     "action s/checkout@v4",
+			wantErr: "invalid",
+		},
+		{
 			name:    "generic url rejected",
 			raw:     "https://github.com/actions/checkout@v4",
 			wantErr: "unsupported uses reference",
