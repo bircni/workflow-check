@@ -87,13 +87,19 @@ func runDiff(ctx context.Context, cfg Config, stdout io.Writer) error {
 			return err
 		}
 	}
-	for _, drift := range report.Drift {
-		if _, err := fmt.Fprintf(stdout, "drift\t%s:%d\t%s\t%s -> %s\n", drift.Discovered.File, drift.Discovered.Line, drift.Discovered.Normalized.Key(), drift.Entry.ResolvedSHA, drift.Resolved); err != nil {
+	for _, stale := range report.Stale {
+		if _, err := fmt.Fprintf(stdout, "stale\t%s\n", stale.Key()); err != nil {
 			return err
 		}
 	}
-	for _, stale := range report.Stale {
-		if _, err := fmt.Fprintf(stdout, "stale\t%s\n", stale.Key()); err != nil {
+	for _, drift := range report.Drift {
+		if drift.Resolved == "" {
+			if _, err := fmt.Fprintf(stdout, "ref-mismatch\t%s:%d\t%s\n", drift.Discovered.File, drift.Discovered.Line, drift.Discovered.Normalized.Key()); err != nil {
+				return err
+			}
+			continue
+		}
+		if _, err := fmt.Fprintf(stdout, "drift\t%s:%d\t%s\t%s -> %s\n", drift.Discovered.File, drift.Discovered.Line, drift.Discovered.Normalized.Key(), drift.Entry.ResolvedSHA, drift.Resolved); err != nil {
 			return err
 		}
 	}

@@ -69,3 +69,15 @@ func (e LockEntry) Key() string {
 	}
 	return ref.Key()
 }
+
+// LockFieldsMatch reports whether stored lock metadata matches the workflow-normalized
+// ref (host, repo coordinates, pin, and kind). This is checked before any remote SHA
+// resolution during verify/report.
+func LockFieldsMatch(e LockEntry, n NormalizedRef) bool {
+	return e.Host == n.Host &&
+		e.Owner == n.Owner &&
+		e.Repo == n.Repo &&
+		e.Path == n.Path &&
+		e.Ref == n.Ref &&
+		e.SourceKind == n.SourceKind
+}

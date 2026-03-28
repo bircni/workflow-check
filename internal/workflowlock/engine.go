@@ -70,11 +70,15 @@ func (e Engine) Verify(ctx context.Context, workflowDir, lockfilePath string) er
 	for _, missing := range report.Missing {
 		issues = append(issues, fmt.Sprintf("%s:%d missing lock entry for %s", missing.File, missing.Line, missing.Raw))
 	}
-	for _, drift := range report.Drift {
-		issues = append(issues, fmt.Sprintf("%s:%d lock drift for %s: lockfile=%s resolved=%s", drift.Discovered.File, drift.Discovered.Line, drift.Discovered.Raw, drift.Entry.ResolvedSHA, drift.Resolved))
-	}
 	for _, stale := range report.Stale {
 		issues = append(issues, "stale lock entry for "+stale.Key())
+	}
+	for _, drift := range report.Drift {
+		if drift.Resolved == "" {
+			issues = append(issues, fmt.Sprintf("%s:%d lock entry mismatch for %s (workflow ref vs lockfile fields differ; SHA not checked)", drift.Discovered.File, drift.Discovered.Line, drift.Discovered.Raw))
+			continue
+		}
+		issues = append(issues, fmt.Sprintf("%s:%d lock drift for %s: lockfile=%s resolved=%s", drift.Discovered.File, drift.Discovered.Line, drift.Discovered.Raw, drift.Entry.ResolvedSHA, drift.Resolved))
 	}
 
 	return fmt.Errorf("verification failed:\n%s", strings.Join(issues, "\n"))
@@ -92,13 +96,19 @@ func (e Engine) resolveEntries(ctx context.Context, refs []DiscoveredRef) ([]Loc
 	}
 	sort.Strings(keys)
 
+	normRefs := make([]NormalizedRef, len(keys))
+	for i, key := range keys {
+		normRefs[i] = unique[key]
+	}
+	shas, err := resolveRefs(ctx, e.resolver, normRefs)
+	if err != nil {
+		return nil, err
+	}
+
 	entries := make([]LockEntry, 0, len(keys))
 	for _, key := range keys {
 		ref := unique[key]
-		sha, err := e.resolver.Resolve(ctx, ref)
-		if err != nil {
-			return nil, err
-		}
+		sha := shas[key]
 		entries = append(entries, LockEntry{
 			Host:        ref.Host,
 			Owner:       ref.Owner,
@@ -147,6 +157,18 @@ func (e Engine) Report(ctx context.Context, workflowDir, lockfilePath string) (R
 		Drift:   []DriftIssue{},
 		Stale:   []LockEntry{},
 	}
+
+	for _, entry := range lockfile.Entries {
+		if _, ok := expectedKeys[entry.Key()]; !ok {
+			report.Stale = append(report.Stale, entry)
+		}
+	}
+
+	type driftCheck struct {
+		discovered DiscoveredRef
+		entry      LockEntry
+	}
+	var needsResolve []driftCheck
 	for _, key := range keys {
 		discovered := expectedKeys[key]
 		entry, ok := index[key]
@@ -154,22 +176,48 @@ func (e Engine) Report(ctx context.Context, workflowDir, lockfilePath string) (R
 			report.Missing = append(report.Missing, discovered)
 			continue
 		}
-		sha, err := e.resolver.Resolve(ctx, discovered.Normalized)
-		if err != nil {
-			return Report{}, err
-		}
-		if sha != entry.ResolvedSHA {
+		if !LockFieldsMatch(entry, discovered.Normalized) {
 			report.Drift = append(report.Drift, DriftIssue{
 				Discovered: discovered,
 				Entry:      entry,
-				Resolved:   sha,
+				Resolved:   "",
 			})
+			continue
 		}
+		needsResolve = append(needsResolve, driftCheck{discovered: discovered, entry: entry})
 	}
 
-	for _, entry := range lockfile.Entries {
-		if _, ok := expectedKeys[entry.Key()]; !ok {
-			report.Stale = append(report.Stale, entry)
+	if len(report.Missing) > 0 || len(report.Stale) > 0 {
+		sort.Slice(report.Missing, func(i, j int) bool {
+			return report.Missing[i].Normalized.Key() < report.Missing[j].Normalized.Key()
+		})
+		sort.Slice(report.Drift, func(i, j int) bool {
+			return report.Drift[i].Discovered.Normalized.Key() < report.Drift[j].Discovered.Normalized.Key()
+		})
+		sort.Slice(report.Stale, func(i, j int) bool {
+			return report.Stale[i].Key() < report.Stale[j].Key()
+		})
+		return report, nil
+	}
+
+	if len(needsResolve) > 0 {
+		normRefs := make([]NormalizedRef, len(needsResolve))
+		for i := range needsResolve {
+			normRefs[i] = needsResolve[i].discovered.Normalized
+		}
+		shas, err := resolveRefs(ctx, e.resolver, normRefs)
+		if err != nil {
+			return Report{}, err
+		}
+		for _, c := range needsResolve {
+			sha := shas[c.discovered.Normalized.Key()]
+			if sha != c.entry.ResolvedSHA {
+				report.Drift = append(report.Drift, DriftIssue{
+					Discovered: c.discovered,
+					Entry:      c.entry,
+					Resolved:   sha,
+				})
+			}
 		}
 	}
 

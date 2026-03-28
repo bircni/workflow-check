@@ -269,11 +269,12 @@ jobs:
 	if err == nil {
 		t.Fatal("expected verify error")
 	}
-	if !strings.Contains(err.Error(), "lock drift") {
-		t.Fatalf("expected drift error, got %v", err)
-	}
 	if !strings.Contains(err.Error(), "missing lock entry") {
 		t.Fatalf("expected missing entry error, got %v", err)
+	}
+	// Structural failures skip SHA resolution so drift is not reported in the same run.
+	if strings.Contains(err.Error(), "lock drift") {
+		t.Fatalf("did not expect SHA drift when a ref is still missing (resolver should not run), got %v", err)
 	}
 }
 
@@ -341,6 +342,91 @@ func TestLockMatchesLargeFixture(t *testing.T) {
 	if string(got) != string(want) {
 		t.Fatalf("lockfile mismatch\n--- got ---\n%s\n--- want ---\n%s", string(got), string(want))
 	}
+}
+
+func TestVerifySkipsResolverWhenMissingOrStale(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workflowDir := filepath.Join(root, ".github", "workflows")
+	if err := os.MkdirAll(workflowDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workflowDir, "ci.yml"), []byte("jobs:\n  test:\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-go@v5\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteLockfile(filepath.Join(root, "workflow-lock.yaml"), []LockEntry{{
+		Host:        "github.com",
+		Owner:       "actions",
+		Repo:        "checkout",
+		Ref:         "v4",
+		ResolvedSHA: strings.Repeat("a", 40),
+		SourceKind:  SourceKindAction,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	var calls int
+	res := countingResolver{fn: func(NormalizedRef) {
+		calls++
+	}}
+	err := NewEngine(res).Verify(context.Background(), workflowDir, filepath.Join(root, "workflow-lock.yaml"))
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if calls != 0 {
+		t.Fatalf("expected no resolver calls when a ref is missing, got %d", calls)
+	}
+}
+
+func TestReportDetectsLockFieldMismatchWithoutResolve(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workflowDir := filepath.Join(root, ".github", "workflows")
+	if err := os.MkdirAll(workflowDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workflowDir, "ci.yml"), []byte("jobs:\n  test:\n    steps:\n      - uses: actions/checkout@v4\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Same Key() as the workflow pin, but SourceKind disagrees (Key ignores source_kind).
+	if err := WriteLockfile(filepath.Join(root, "workflow-lock.yaml"), []LockEntry{{
+		Host:        "github.com",
+		Owner:       "actions",
+		Repo:        "checkout",
+		Ref:         "v4",
+		ResolvedSHA: strings.Repeat("a", 40),
+		SourceKind:  SourceKindReusableWorkflow,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	var calls int
+	res := countingResolver{fn: func(NormalizedRef) {
+		calls++
+	}}
+	report, err := NewEngine(res).Report(context.Background(), workflowDir, filepath.Join(root, "workflow-lock.yaml"))
+	if err != nil {
+		t.Fatalf("report: %v", err)
+	}
+	if calls != 0 {
+		t.Fatalf("expected no resolver calls for field mismatch, got %d", calls)
+	}
+	if len(report.Drift) != 1 || report.Drift[0].Resolved != "" {
+		t.Fatalf("expected one ref-only drift, got %+v", report.Drift)
+	}
+}
+
+type countingResolver struct {
+	fn func(NormalizedRef)
+}
+
+func (c countingResolver) Resolve(_ context.Context, ref NormalizedRef) (string, error) {
+	if c.fn != nil {
+		c.fn(ref)
+	}
+	return strings.Repeat("b", 40), nil
 }
 
 func TestReportIncludesStaleEntries(t *testing.T) {

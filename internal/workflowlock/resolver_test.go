@@ -84,6 +84,50 @@ func TestGitResolverReportsMissingRef(t *testing.T) {
 	}
 }
 
+func TestGitResolverBulkUsesOneLsRemotePerRepo(t *testing.T) {
+	t.Parallel()
+
+	var calls int
+	previous := execCommandContext
+	execCommandContext = func(_ context.Context, name string, args ...string) *exec.Cmd {
+		t.Helper()
+		if name != "git" {
+			t.Fatalf("unexpected command %q", name)
+		}
+		if len(args) < 2 || args[0] != "ls-remote" {
+			t.Fatalf("unexpected git args: %v", args)
+		}
+		if len(args) != 2 {
+			t.Fatalf("bulk resolve should run ls-remote with URL only, got %d args: %v", len(args), args)
+		}
+		calls++
+		out := "1111111111111111111111111111111111111111 refs/tags/v1.0.0\n" +
+			"2222222222222222222222222222222222222222 refs/tags/v2.0.0^{}\n"
+		return fakeCmd(out, "", nil)
+	}
+	defer func() {
+		execCommandContext = previous
+	}()
+
+	refs := []NormalizedRef{
+		{Host: "github.com", Owner: "acme", Repo: "tool", Ref: "v1.0.0", SourceKind: SourceKindAction},
+		{Host: "github.com", Owner: "acme", Repo: "tool", Ref: "v2.0.0", SourceKind: SourceKindAction},
+	}
+	got, err := resolveRefs(context.Background(), GitResolver{}, refs)
+	if err != nil {
+		t.Fatalf("resolveRefs: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("git ls-remote invocations: got %d want 1", calls)
+	}
+	if got[refs[0].Key()] != strings.Repeat("1", 40) {
+		t.Fatalf("v1 sha: got %q", got[refs[0].Key()])
+	}
+	if got[refs[1].Key()] != strings.Repeat("2", 40) {
+		t.Fatalf("v2 sha: got %q", got[refs[1].Key()])
+	}
+}
+
 func stubExecCommand(t *testing.T, stdout, stderr string, runErr error) func() {
 	t.Helper()
 
