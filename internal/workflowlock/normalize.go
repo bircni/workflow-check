@@ -17,7 +17,7 @@ func NormalizeRefForHost(raw, defaultHost string) (NormalizedRef, bool, error) {
 	if raw == "" {
 		return NormalizedRef{}, false, fmt.Errorf("empty uses value")
 	}
-	if strings.HasPrefix(raw, "./") {
+	if strings.HasPrefix(raw, "./") || strings.HasPrefix(raw, "../") {
 		return NormalizedRef{}, true, nil
 	}
 
@@ -77,6 +77,55 @@ func validateNormalizedRef(ref NormalizedRef, raw string) error {
 	}
 	if strings.Contains(ref.Host, "://") {
 		return fmt.Errorf("unsupported uses reference %q", raw)
+	}
+	if err := validateHostSegment(ref.Host, raw); err != nil {
+		return err
+	}
+	if err := validateIdentitySegment(ref.Owner, raw, "owner"); err != nil {
+		return err
+	}
+	if err := validateIdentitySegment(ref.Repo, raw, "repo"); err != nil {
+		return err
+	}
+	if ref.Path != "" {
+		if err := validateSlashDelimitedSegments(ref.Path, raw, "path"); err != nil {
+			return err
+		}
+	}
+	if err := validateSlashDelimitedSegments(ref.Ref, raw, "ref"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateHostSegment(host, raw string) error {
+	if host == "." || host == ".." {
+		return fmt.Errorf("unsupported uses reference %q: invalid host", raw)
+	}
+	if strings.ContainsAny(host, "/\\\t\n\r \x00") {
+		return fmt.Errorf("unsupported uses reference %q: invalid host", raw)
+	}
+	return nil
+}
+
+func validateIdentitySegment(part, raw, label string) error {
+	if part == "." || part == ".." {
+		return fmt.Errorf("unsupported uses reference %q: invalid %s", raw, label)
+	}
+	if strings.ContainsAny(part, "/\\\t\n\r \x00") {
+		return fmt.Errorf("unsupported uses reference %q: invalid %s", raw, label)
+	}
+	return nil
+}
+
+func validateSlashDelimitedSegments(value, raw, label string) error {
+	for _, seg := range strings.Split(value, "/") {
+		if seg == "" || seg == "." || seg == ".." {
+			return fmt.Errorf("unsupported uses reference %q: invalid %s", raw, label)
+		}
+		if strings.ContainsAny(seg, "\\\t\n\r \x00") {
+			return fmt.Errorf("unsupported uses reference %q: invalid %s", raw, label)
+		}
 	}
 	return nil
 }

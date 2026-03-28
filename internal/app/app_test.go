@@ -107,6 +107,16 @@ func TestRunDiffJSONUsesStableShape(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	previous := newEngine
+	t.Cleanup(func() { newEngine = previous })
+	newEngine = func(_ workflowlock.Resolver, host string) workflowlock.Engine {
+		return workflowlock.NewEngineWithDefaultHost(fakeResolver{
+			results: map[string]string{
+				host + "/actions/checkout@v4": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+			},
+		}, host)
+	}
+
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	err := Run(
